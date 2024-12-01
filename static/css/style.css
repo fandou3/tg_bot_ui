@@ -47,10 +47,13 @@ body {
 }
 
 .chat-item-username {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .chat-time {
@@ -120,63 +123,163 @@ body {
     color: #333;
 }
 
-/* 消息区域 */
+/* 消息区域基础样式 */
 .messages {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
-    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: #f0f2f5;
 }
 
+/* 消息容器 */
 .message {
-    margin-bottom: 20px;
     display: flex;
     flex-direction: column;
     max-width: 70%;
-    clear: both;
-}
-
-.message.telegram {
-    float: left;
-}
-
-.message.user {
-    float: right;
-}
-
-.message-content {
-    padding: 12px 16px;
-    border-radius: 12px;
-    word-wrap: break-word;
+    margin-bottom: 10px;
     position: relative;
 }
 
-.telegram .message-content {
-    background-color: #e3f2fd;
+/* 发送者（右侧）消息 */
+.message.outgoing {
+    align-self: flex-end;
 }
 
-.user .message-content {
-    background-color: #e8f5e9;
+.message.outgoing .message-content {
+    background-color: #dcf8c6;  /* 浅绿色背景 */
     color: #000;
+    border-radius: 15px 15px 3px 15px;
+    padding: 8px 12px;
+    margin-left: auto;
 }
 
-.message-meta {
+.message.outgoing .message-info {
+    text-align: right;
+    margin-left: auto;
+}
+
+/* 接收者（左侧）消息 */
+.message.incoming {
+    align-self: flex-start;
+}
+
+.message.incoming .message-content {
+    background-color: #ffffff;  /* 白色背景 */
+    color: #000;
+    border-radius: 15px 15px 15px 3px;
+    padding: 8px 12px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.message.incoming .message-info {
+    text-align: left;
+}
+
+/* 消息内容 */
+.message-content {
+    word-wrap: break-word;
+    position: relative;
+    max-width: 100%;
+}
+
+/* 消息信息（时间和状态） */
+.message-info {
     font-size: 12px;
-    color: #757575;
-    margin-top: 4px;
-    clear: both;
+    color: #8696a0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
-.message img {
+.message.outgoing .message-info {
+    justify-content: flex-end;
+}
+
+.message-time {
+    font-size: 11px;
+}
+
+.message-sender {
+    font-weight: 500;
+    margin-right: 4px;
+}
+
+/* 消息状态 */
+.message-status {
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.message.outgoing .message-status {
+    margin-left: 4px;
+}
+
+.message-status .loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.message-status .loading::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border: 2px solid #8696a0;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.message-status .success {
+    color: #4fc3f7;
+}
+
+.message-status .error {
+    color: #ef5350;
+}
+
+/* 图片消息 */
+.message-image {
     max-width: 300px;
     border-radius: 8px;
-    margin-top: 8px;
+    margin-top: 4px;
     cursor: pointer;
     transition: transform 0.2s;
 }
 
-.message img:hover {
+.message-image:hover {
     transform: scale(1.02);
+}
+
+/* 暗黑模式 */
+@media (prefers-color-scheme: dark) {
+    .messages {
+        background-color: #0f1419;
+    }
+
+    .message.outgoing .message-content {
+        background-color: #005c4b;
+        color: #fff;
+    }
+
+    .message.incoming .message-content {
+        background-color: #1f2937;
+        color: #fff;
+    }
+
+    .message-info {
+        color: #8696a0;
+    }
+
+    .message-status .loading::after {
+        border-color: #8696a0;
+        border-top-color: transparent;
+    }
 }
 
 /* 输入区域 */
@@ -365,4 +468,88 @@ body {
     .chat-item.pinned:hover {
         background-color: #333;
     }
+}
+
+/* 消息状态样式 */
+.message-status {
+    font-size: 12px;
+    margin-top: 4px;
+    text-align: right;
+    color: #666;
+}
+
+.message-status .loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.message-status .loading::after {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border: 2px solid #666;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.message-status .success {
+    color: #4CAF50;
+}
+
+.message-status .error {
+    color: #f44336;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 消息元信息 */
+.message-info {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.message-time {
+    margin-right: 8px;
+}
+
+.message-sender {
+    font-weight: 500;
+}
+
+/* 暗黑模式支持 */
+@media (prefers-color-scheme: dark) {
+    .incoming .message-content {
+        background-color: #2d2d2d;
+        color: #fff;
+    }
+
+    .outgoing .message-content {
+        background-color: #1565c0;
+        color: #fff;
+    }
+
+    .message-info {
+        color: #aaa;
+    }
+}
+
+/* 图片消息样式 */
+.message-image {
+    max-width: 300px;
+    border-radius: 8px;
+    margin-top: 8px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.message-image:hover {
+    transform: scale(1.02);
 } 

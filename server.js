@@ -52,14 +52,59 @@ db.serialize(() => {
 let client; // 声明全局 client 变量
 let bot;
 
-// 检查是否提供了必要的配置
-if (!config.telegramToken && (!config.apiId || !config.apiHash)) {
-    console.error('错误: 需要提供 Telegram Token 或 API 凭据');
-    process.exit(1);
-}
+// 检查配置类型
+if (config.BOT_TOKEN) {
+    console.log('使用机器人模式启动...');
+    bot = new TelegramBot(config.BOT_TOKEN, { polling: true });
+    
+    // 监听机器人消息
+    bot.on('message', async (msg) => {
+        try {
+            // 检查是否是机器人消息
+            if (msg.from.is_bot) {
+                console.log('忽略机器人消息');
+                return;
+            }
 
-if (config.apiId && config.apiHash) {
-    // 如果是用户账号 token，使用 telegram 客户端
+            const messageData = {
+                text: msg.text || '',
+                chat: {
+                    id: msg.chat.id,
+                    type: msg.chat.type,
+                    title: msg.chat.title || msg.chat.username || msg.chat.first_name || '未知聊天'
+                },
+                from: {
+                    username: msg.from.username || msg.from.first_name || '未知用户',
+                    first_name: msg.from.first_name || msg.from.username || '未知用户'
+                },
+                message_id: msg.message_id,
+                date: msg.date
+            };
+
+            // 处理图片消息
+            if (msg.photo) {
+                const photo = msg.photo[msg.photo.length - 1];
+                const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+                const filePath = path.join(uploadDir, fileName);
+                
+                try {
+                    await bot.downloadFile(photo.file_id, uploadDir);
+                    messageData.image_url = `/static/uploads/${fileName}`;
+                } catch (err) {
+                    console.error('下载图片失败:', err);
+                }
+            }
+
+            // 处理消息
+            await handleNewMessage(messageData);
+
+        } catch (err) {
+            console.error('处理消息错误:', err);
+        }
+    });
+
+} else if (config.apiId && config.apiHash) {
+    // 原有的用户账号逻辑保持不变
     const { TelegramClient } = require('telegram');
     const { StringSession } = require('telegram/sessions');
     const { NewMessage } = require('telegram/events');
@@ -313,6 +358,9 @@ if (config.apiId && config.apiHash) {
             }
         }
     };
+} else {
+    console.error('错误: 需要提供 Telegram Bot Token 或 API 凭据');
+    process.exit(1);
 }
 
 // 静态文件服务
@@ -398,15 +446,20 @@ io.on('connection', (socket) => {
             if (!chatId) {
                 throw new Error('没有可回复的聊天ID');
             }
-            
-            console.log('尝试发送消息到聊天:', {
-                chatId: chatId,
-                text: data.text
-            });
-            
-            const sent = await bot.sendMessage(chatId, data.text);
-            
-            // 存储消息
+
+            let sent;
+            if (config.BOT_TOKEN) {
+                // 使用机器人发送消息
+                sent = await bot.sendMessage(chatId, data.text);
+            } else {
+                // 使用用户账号发送消息
+                sent = await client.sendMessage(chatId, {
+                    message: data.text,
+                    parseMode: 'html'
+                });
+            }
+
+            // 存储消息到数据库
             db.run(`
                 INSERT INTO messages (
                     text, 
@@ -416,32 +469,31 @@ io.on('connection', (socket) => {
                     chat_name,
                     sender_name,
                     chat_type,
-                    access_hash
+                    is_read
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `, [
                 data.text, 
                 false, 
-                sent.chat.id.toString(), // 确保是字符串
-                sent.message_id || 0,
-                sent.chat.title || '你',
+                chatId,
+                sent.message_id,
                 '你',
-                sent.chat.className || 'private',
-                sent.chat.accessHash ? sent.chat.accessHash.toString() : null
-            ]);
+                '你',
+                'private',
+                true
+            ], (err) => {
+                if (err) {
+                    console.error('存储消息错误:', err);
+                    socket.emit('send_error', { message: '消息保存失败' });
+                    return;
+                }
 
-            // 确保所有可能的 BigInt 都被转换为字符串
-            const safeMsg = {
-                text: data.text,
-                from: 'user',
-                timestamp: new Date(),
-                chatId: sent.chat.id.toString(), // 确保是字符串
-                chatName: '你',
-                senderName: '你',
-                chatType: 'private'
-            };
+                // 只向发送者的socket发送成功状态
+                socket.emit('message_sent', {
+                    messageId: sent.message_id,
+                    text: data.text
+                });
+            });
 
-            // 广播消息给所有连接的客户端
-            io.emit('new_message', safeMsg);
         } catch (error) {
             console.error('发送消息错误:', error);
             socket.emit('send_error', { message: error.message });
