@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电报消息监听系统</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar" id="chatList">
+            <!-- 聊天列表将在这里显示 -->
+        </div>
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2 id="currentChat">所有消息</h2>
+            </div>
+            <div class="messages" id="messageContainer">
+                <!-- 消息将在这里动态加载 -->
+            </div>
+            <div class="input-area">
+                <textarea id="messageInput" placeholder="请输入回复内容..." rows="3"></textarea>
+                <div class="button-group">
+                    <button id="sendButton" class="primary-button">发送</button>
+                    <button id="clearButton" class="secondary-button">清空</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="/static/js/ui.js"></script>
+    <script src="/static/js/message.js"></script>
+    <script src="/static/js/chat.js"></script>
+    <script src="/static/js/socket.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 
